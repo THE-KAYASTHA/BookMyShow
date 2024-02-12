@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Book_My_Show" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="Accio.com.example.BookMyShow.BookMyShowApplication" />
+    <module name="BookMyShow" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
