@@ -24,7 +24,7 @@ public class AddMovieRequest {
 
     private Language movieLanguage;
 
-    @JsonFormat(pattern = "dd-MM-yyyy")
+
     private LocalDate releaseDate;
 
     private double duration;

@@ -14,7 +14,7 @@ import java.time.LocalTime;
 @Data
 public class AddShowRequest {
 
-    @JsonFormat(pattern = "dd-MM-yyyy")
+
     private LocalDate showDate;
     private LocalTime showTime;
 

@@ -3,14 +3,17 @@ package Accio.com.example.BookMyShow.Entities;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name="tickets")
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
+
 public class Ticket {
 
 
@@ -19,6 +22,7 @@ public class Ticket {
     private Integer ticketId;
 
     private String seatNosBooked;
+    private boolean foodAttached;
 
     private Integer totalAmountPaid;
 
