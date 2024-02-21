@@ -1,15 +1,16 @@
 package Accio.com.example.BookMyShow.Services;
 
 
-import Accio.com.example.BookMyShow.Entities.Show;
-import Accio.com.example.BookMyShow.Entities.ShowSeat;
-import Accio.com.example.BookMyShow.Entities.TheaterSeat;
-import Accio.com.example.BookMyShow.Entities.Ticket;
+import Accio.com.example.BookMyShow.Entities.*;
 import Accio.com.example.BookMyShow.Repositories.ShowRespository;
 import Accio.com.example.BookMyShow.Repositories.ShowSeatRepository;
 import Accio.com.example.BookMyShow.Repositories.TicketRepository;
+import Accio.com.example.BookMyShow.Repositories.UserRepository;
 import Accio.com.example.BookMyShow.RequestDtos.BookTicketRequest;
+import Accio.com.example.BookMyShow.ResponseDtos.ShowTicketResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,6 +18,9 @@ import java.util.List;
 @Service
 public class TicketService {
 
+
+    @Autowired
+    private JavaMailSender javaMailSender;
     @Autowired
     private TicketRepository ticketRepository;
     @Autowired
@@ -24,11 +28,15 @@ public class TicketService {
     @Autowired
     private ShowSeatRepository showSeatRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     public String bookTicket(BookTicketRequest bookTicketRequest)throws Exception{
 
          Show show=showRespository.findById(bookTicketRequest.getShowId()).get();
         List<ShowSeat> showSeatList=show.getShowSeatList();
         int totalBookingAmount=0;
+
 
         for(String seatToBeBooked : bookTicketRequest.getSeatList()){
             if(!showSeatList.contains(showSeatRepository.findShowSeatBySeatNoAndSeatType(seatToBeBooked,bookTicketRequest.getSeatType()))){
@@ -58,12 +66,16 @@ public class TicketService {
             }
         }
 
+        User user=userRepository.findByEmailId(bookTicketRequest.getEmailId());
+
+
         Ticket ticket=Ticket.builder()
                 .seatNosBooked(bookTicketRequest.getSeatList().toString())
                 .totalAmountPaid(totalBookingAmount)
-
+                .user(user)
                 .show(show)
                 .build();
+
 
         if(bookTicketRequest.getIsFoodCouponAttached().equals("true")){
             ticket.setFoodAttached(Boolean.TRUE);
@@ -71,9 +83,42 @@ public class TicketService {
         else{
             ticket.setFoodAttached(Boolean.FALSE);
         }
+        user.getTicketList().add(ticket);
             show.getTicketList().add(ticket);
             ticket=ticketRepository.save(ticket);
             return "This is the ticket with the ticketId "+ticket.getTicketId();
+    }
+
+    public ShowTicketResponse viewTicket(Integer ticketId){
+
+        Ticket ticket=ticketRepository.findById(ticketId).get();
+        Show show=ticket.getShow();
+        String movieName=show.getMovie().getMovieName();
+        String theaterInfo=show.getTheater().getName()+" "+show.getTheater().getAddress();
+        String bookedSeats=ticket.getSeatNosBooked();
+
+        ShowTicketResponse showTicketResponse=ShowTicketResponse.builder()
+                .movieName(movieName)
+                .theaterInfo(theaterInfo)
+                .showDate(show.getShowDate())
+                .showTime(show.getShowTime())
+                .seatNos(bookedSeats)
+                .totalAmount(ticket.getTotalAmountPaid())
+                .build();
+
+        String emailId=ticket.getUser().getEmailId();
+
+        SimpleMailMessage simpleMailMessage=new SimpleMailMessage();
+        simpleMailMessage.setFrom("kulshreshthakamalwings@gmail.com");
+        simpleMailMessage.setTo(emailId);
+        simpleMailMessage.setSubject("Movie Ticket Confirmation");
+        simpleMailMessage.setText(showTicketResponse.toString());
+
+        javaMailSender.send(simpleMailMessage);
+
+        return showTicketResponse;
+
+
     }
 
 }

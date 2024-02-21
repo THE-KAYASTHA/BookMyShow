@@ -26,8 +26,13 @@ public class Ticket {
 
     private Integer totalAmountPaid;
 
-
+    //seatType
     @JoinColumn
     @ManyToOne
     private Show show;
+
+
+    @JoinColumn
+    @ManyToOne
+    private User user;
 }

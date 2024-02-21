@@ -13,6 +13,7 @@ public class BookTicketRequest {
     private List<String> seatList;
     private SeatType seatType;
     private String isFoodCouponAttached;
+    private String emailId;
 
 
 }
