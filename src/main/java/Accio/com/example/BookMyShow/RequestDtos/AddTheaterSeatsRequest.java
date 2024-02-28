@@ -10,4 +10,5 @@ private int noOfClassicSeats;
 private int theaterId;
 private int noOfPremiumSeats;
 
+    private Integer noOfCol;
 }

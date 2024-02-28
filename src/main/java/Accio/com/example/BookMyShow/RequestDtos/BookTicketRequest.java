@@ -11,9 +11,10 @@ public class BookTicketRequest {
 
     private int showId;
     private List<String> seatList;
-    private SeatType seatType;
-    private String isFoodCouponAttached;
+
+    private boolean isFoodCouponAttached;
     private String emailId;
+
 
 
 }

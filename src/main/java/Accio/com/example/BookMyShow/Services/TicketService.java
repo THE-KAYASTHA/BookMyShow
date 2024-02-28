@@ -13,7 +13,9 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TicketService {
@@ -33,59 +35,68 @@ public class TicketService {
 
     public String bookTicket(BookTicketRequest bookTicketRequest)throws Exception{
 
-         Show show=showRespository.findById(bookTicketRequest.getShowId()).get();
-        List<ShowSeat> showSeatList=show.getShowSeatList();
-        int totalBookingAmount=0;
-
-
-        for(String seatToBeBooked : bookTicketRequest.getSeatList()){
-            if(!showSeatList.contains(showSeatRepository.findShowSeatBySeatNoAndSeatType(seatToBeBooked,bookTicketRequest.getSeatType()))){
-                throw new Exception("Seat No "+seatToBeBooked+" does not exist in the theaterSeat.");
-            }
-
-            for(ShowSeat showSeat: showSeatList){
-
-                if(showSeat.getSeatNo().equals(seatToBeBooked) &&(bookTicketRequest.getSeatType().equals(showSeat.getSeatType()))){
-
-                        if(showSeat.isAvailable()){
-                            showSeat.setAvailable(Boolean.FALSE);
-                            totalBookingAmount+= showSeat.getPrice();
-                        }
-                        else{
-                            throw new Exception("Seat No "+showSeat.getSeatNo()+" is already Booked.");
-                        }
-
-                        if(bookTicketRequest.getIsFoodCouponAttached().equals("true")){
-                            showSeat.setFoodAttached(Boolean.TRUE);
-                            totalBookingAmount+=100;
-                        }
-
-                }
-
-
-            }
+        Optional<Show> optionalShow=showRespository.findById(bookTicketRequest.getShowId());
+        if(optionalShow.isEmpty())
+        {
+            throw new Exception("Show not available for given movie at given time in given Theater Try changing  time OR Movie OR Theater");
+        }
+        Show show=optionalShow.get();
+        Optional<User> optionalUser=userRepository.findByEmailId(bookTicketRequest.getEmailId());
+        if(optionalUser.isEmpty())
+        {
+            throw new Exception("Email does not Exist");
         }
 
-        User user=userRepository.findByEmailId(bookTicketRequest.getEmailId());
+        //assign seats to  ticket
+        List<ShowSeat>showSeatList=show.getShowSeatList();
+        int totalAmt=0;
+        //List<showSeat>bookedSeatAgainstTicket=new ArrayList<>();
+        List<String> seatNumbers=bookTicketRequest.getSeatList();
+        for(ShowSeat seat:showSeatList)
+        {
+            if(seatNumbers.contains(seat.getSeatNo()) && seat.isAvailable()==Boolean.TRUE)
+            {
+                seat.setAvailable(Boolean.FALSE);
+                //bookedSeatAgainstTicket.add(seat);
+                seat.setFoodAttached(bookTicketRequest.isFoodCouponAttached());
+                totalAmt+=seat.getPrice();
+            }
+            else if(seatNumbers.contains(seat.getSeatNo()) && seat.isAvailable()==Boolean.FALSE){
+                throw new Exception("Seat No "+seat.getSeatNo()+" is already booked.");
+            }
+        }
+        if(bookTicketRequest.isFoodCouponAttached() )
+        {
+            totalAmt+=150* seatNumbers.size();
+        }
+        User user=optionalUser.get();
 
 
         Ticket ticket=Ticket.builder()
+                .totalAmountPaid(totalAmt)
+                .movieName(show.getMovie().getMovieName())
+                .theaterNameAndAdd(show.getTheater().getName()+" "+show.getTheater().getAddress())
+                .foodAttached(bookTicketRequest.isFoodCouponAttached())
                 .seatNosBooked(bookTicketRequest.getSeatList().toString())
-                .totalAmountPaid(totalBookingAmount)
-                .user(user)
+                .showTime(show.getShowTime())
+                .showDate(show.getShowDate())
                 .show(show)
+                .user(user)
                 .build();
 
 
-        if(bookTicketRequest.getIsFoodCouponAttached().equals("true")){
-            ticket.setFoodAttached(Boolean.TRUE);
-        }
-        else{
-            ticket.setFoodAttached(Boolean.FALSE);
-        }
         user.getTicketList().add(ticket);
             show.getTicketList().add(ticket);
             ticket=ticketRepository.save(ticket);
+        SimpleMailMessage simpleMailMessage=new SimpleMailMessage();
+        simpleMailMessage.setFrom("kulshreshthakamalwings@gmail.com");
+        simpleMailMessage.setTo(bookTicketRequest.getEmailId());
+        simpleMailMessage.setSubject("Movie Ticket Confirmation");
+        simpleMailMessage.setText("Hey "+user.getName()+" Your tickets book Successfully for "+ticket.getMovieName()+" at "+
+                ticket.getTheaterNameAndAdd()+". Your seats  are "+ticket.getSeatNosBooked()+" Reach 10-20 Minutes prior to show. Your show Time is "+
+                ticket.getShowTime()+" "+ticket.getShowDate()+". And  Amount  of Rs "+ticket.getTotalAmountPaid()+" is already Paid");
+
+        javaMailSender.send(simpleMailMessage);
             return "This is the ticket with the ticketId "+ticket.getTicketId();
     }
 
@@ -100,6 +111,7 @@ public class TicketService {
         ShowTicketResponse showTicketResponse=ShowTicketResponse.builder()
                 .movieName(movieName)
                 .theaterInfo(theaterInfo)
+
                 .showDate(show.getShowDate())
                 .showTime(show.getShowTime())
                 .seatNos(bookedSeats)
@@ -112,7 +124,9 @@ public class TicketService {
         simpleMailMessage.setFrom("kulshreshthakamalwings@gmail.com");
         simpleMailMessage.setTo(emailId);
         simpleMailMessage.setSubject("Movie Ticket Confirmation");
-        simpleMailMessage.setText(showTicketResponse.toString());
+        simpleMailMessage.setText("Hey "+ticket.getUser().getName()+" Your tickets book Successfully for "+ticket.getMovieName()+" at "+
+                ticket.getTheaterNameAndAdd()+". Your seats  are "+ticket.getSeatNosBooked()+" Reach 10-20 Minutes prior to show. Your show Time is "+
+                ticket.getShowTime()+" "+ticket.getShowDate()+". And  Amount  of Rs "+ticket.getTotalAmountPaid()+" is already Paid");
 
         javaMailSender.send(simpleMailMessage);
 

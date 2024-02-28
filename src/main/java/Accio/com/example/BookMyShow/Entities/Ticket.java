@@ -7,6 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 @Entity
 @Table(name="tickets")
 @Data
@@ -22,8 +25,11 @@ public class Ticket {
     private Integer ticketId;
 
     private String seatNosBooked;
+    private LocalTime showTime;
+    private LocalDate showDate;
+    private String movieName;
+    private String theaterNameAndAdd;
     private boolean foodAttached;
-
     private Integer totalAmountPaid;
 
     //seatType

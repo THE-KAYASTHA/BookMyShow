@@ -20,8 +20,8 @@ public class ShowTicketResponse {
     private String theaterInfo;
     private LocalDate showDate;
     private LocalTime showTime;
-
+    private boolean foodAttached;
     private int totalAmount;
     private String seatNos;
-    private SeatType seatType;
+
 }
